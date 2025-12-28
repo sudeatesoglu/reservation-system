@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: reservation-system
+data:
+  # Service URLs
+  USER_SERVICE_URL: "http://user-service:8000"
+  RESOURCE_SERVICE_URL: "http://resource-service:8001"
+  RESERVATION_SERVICE_URL: "http://reservation-service:8002"
+  
+  # Database URLs
+  DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/userdb"
+  MONGODB_URL: "mongodb://mongodb:27017"
+  
+  # RabbitMQ
+  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+  
+  # Database names
+  MONGODB_DB_RESOURCE: "resourcedb"
+  MONGODB_DB_RESERVATION: "reservationdb"
+  
+  # JWT Settings
+  ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  
+  # Email (disabled by default)
+  EMAIL_ENABLED: "false"

@@ -1,0 +1,258 @@
+version: '3.8'
+
+services:
+  # ==================== Databases ====================
+  postgres:
+    image: postgres:15-alpine
+    container_name: reservation-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: userdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reservation-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: reservation-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reservation-network
+
+  # ==================== Message Queue ====================
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: reservation-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reservation-network
+
+  # ==================== Database Initialization ====================
+  db-init:
+    image: python:3.11-alpine
+    container_name: reservation-db-init
+    working_dir: /app
+    volumes:
+      - ./scripts:/app/scripts
+    command: >
+      sh -c "
+        echo 'Waiting for databases...' &&
+        apk add --no-cache postgresql-client &&
+        while ! pg_isready -h postgres -U postgres; do
+          echo 'PostgreSQL is unavailable - sleeping'
+          sleep 2
+        done &&
+        echo 'PostgreSQL is ready!' &&
+        echo 'Running PostgreSQL initialization...' &&
+        PGPASSWORD=postgres psql -h postgres -U postgres -d userdb -f /app/scripts/init_postgres.sql &&
+        echo 'PostgreSQL initialization complete!' &&
+        echo 'Running MongoDB initialization...' &&
+        pip install pymongo &&
+        python3 /app/scripts/init_mongodb.py &&
+        echo 'All database initialization complete!'
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - reservation-network
+    profiles:
+      - init
+
+  # ==================== Microservices ====================
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: reservation-user-service
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/userdb
+      SECRET_KEY: your-super-secret-key-change-in-production-use-strong-random-string
+      RESOURCE_SERVICE_URL: http://resource-service:8001
+      RESERVATION_SERVICE_URL: http://reservation-service:8002
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - reservation-network
+
+  resource-service:
+    build:
+      context: ./services/resource-service
+      dockerfile: Dockerfile
+    container_name: reservation-resource-service
+    environment:
+      MONGODB_URL: mongodb://mongodb:27017
+      MONGODB_DB: resourcedb
+      SECRET_KEY: your-super-secret-key-change-in-production-use-strong-random-string
+      USER_SERVICE_URL: http://user-service:8000
+    ports:
+      - "8001:8001"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - reservation-network
+
+  reservation-service:
+    build:
+      context: ./services/reservation-service
+      dockerfile: Dockerfile
+    container_name: reservation-reservation-service
+    environment:
+      MONGODB_URL: mongodb://mongodb:27017
+      MONGODB_DB: reservationdb
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      SECRET_KEY: your-super-secret-key-change-in-production-use-strong-random-string
+      USER_SERVICE_URL: http://user-service:8000
+      RESOURCE_SERVICE_URL: http://resource-service:8001
+    ports:
+      - "8002:8002"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - reservation-network
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: reservation-notification-service
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      EMAIL_ENABLED: "false"
+    ports:
+      - "8003:8003"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - reservation-network
+
+      
+
+  # ==================== Monitoring ====================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: reservation-prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - reservation-network
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: reservation-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - reservation-network
+
+
+  # ==================== Frontend ====================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: reservation-frontend
+    environment:
+      REACT_APP_API_BASE_URL: http://localhost:8000
+      REACT_APP_RESOURCE_API_URL: http://localhost:8001
+      REACT_APP_RESERVATION_API_URL: http://localhost:8002
+    ports:
+      - "5173:80"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      resource-service:
+        condition: service_healthy
+      reservation-service:
+        condition: service_healthy
+    networks:
+      - reservation-network
+
+
+# ==================== Networks ====================
+networks:
+  reservation-network:
+    driver: bridge
+
+# ==================== Volumes ====================
+volumes:
+  postgres_data:
+  mongodb_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:
