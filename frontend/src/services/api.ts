@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:30000/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -35,7 +35,7 @@ export default api;
 
 // Resource service API
 export const resourceApi = axios.create({
-  baseURL: import.meta.env.VITE_RESOURCE_API_URL || 'http://localhost:8001/api/v1',
+  baseURL: import.meta.env.VITE_RESOURCE_API_URL || 'http://localhost:31001/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -51,7 +51,7 @@ resourceApi.interceptors.request.use((config) => {
 
 // Reservation service API
 export const reservationApi = axios.create({
-  baseURL: import.meta.env.VITE_RESERVATION_API_URL || 'http://localhost:8002/api/v1',
+  baseURL: import.meta.env.VITE_RESERVATION_API_URL || 'http://localhost:31002/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },

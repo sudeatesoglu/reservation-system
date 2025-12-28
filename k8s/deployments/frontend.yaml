@@ -24,11 +24,11 @@ spec:
           name: http
         env:
         - name: VITE_API_URL
-          value: "http://user-service:8000"
+          value: "http://localhost:30000/api/v1"
         - name: VITE_RESOURCE_API_URL
-          value: "http://resource-service:8001"
+          value: "http://localhost:31001/api/v1"
         - name: VITE_RESERVATION_API_URL
-          value: "http://reservation-service:8002"
+          value: "http://localhost:31002/api/v1"
         resources:
           requests:
             memory: "128Mi"
@@ -57,10 +57,11 @@ metadata:
   labels:
     app: frontend
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
   - port: 80
     targetPort: 80
+    nodePort: 30080
     protocol: TCP
     name: http
   selector:

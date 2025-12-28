@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init
+  namespace: reservation-system
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: db-init
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: db-init
+          image: reservation-db-init:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_DB
+              value: userdb
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: POSTGRES_PASSWORD
+            - name: MONGO_HOST
+              value: mongodb
+            - name: MONGO_PORT
+              value: "27017"

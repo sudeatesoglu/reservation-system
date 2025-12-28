@@ -104,6 +104,38 @@ reservation-system/
 
 ## 🚀 Quick Start
 
+### Local CI/CD (one command)
+
+From the repo root:
+
+```bash
+cd /Users/sudeatesoglu/Desktop/Akademik/CMPE363/reservation-system
+
+# Build images -> apply k8s -> wait for db-init -> smoke test -> port-forward frontend
+make up
+
+# Same as above, but do NOT port-forward (CI mode)
+make ci
+
+# Port-forward ALL services (frontend, APIs, databases, monitoring)
+make pf
+
+# Full pipeline + all port-forwards
+make up-all
+```
+
+Scripts used:
+- `scripts/pipeline/build-images.sh`
+- `scripts/pipeline/deploy-k8s.sh`
+- `scripts/pipeline/smoke-test.sh`
+- `scripts/pipeline/run-local-cicd.sh`
+- `scripts/pipeline/port-forward-all.sh`
+
+Optional flags:
+- `NAMESPACE=reservation-system` (default)
+- `TIMEOUT=300s` (default)
+- `OPEN_FRONTEND=0` (skip frontend port-forward)
+
 ### Prerequisites
 
 - Docker & Docker Compose

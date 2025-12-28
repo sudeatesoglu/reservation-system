@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/userService';
 import type { User } from '../types';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
   const { user: currentUser, setUser } = useAuth();
@@ -19,6 +20,7 @@ export default function Profile() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
 
@@ -46,6 +48,7 @@ export default function Profile() {
       setUser(updatedUser);
       setIsEditingProfile(false);
       toast.success('Profile updated successfully!');
+      navigate("/");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update profile';
       toast.error(errorMessage);
