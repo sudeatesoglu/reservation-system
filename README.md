@@ -30,6 +30,118 @@ A microservices-based reservation system for booking library desks, study rooms,
 └───────────────┘    └────────────────┘    └────────────────┘
 ```
 
+### Architecture Diagrams (Mermaid)
+
+#### 1) System Context (Beginner-friendly)
+
+```mermaid
+flowchart LR
+        U["User"] -->|"Uses browser"| SYS["Reservation System"]
+
+        SYS -->|"User data"| PG["PostgreSQL"]
+        SYS -->|"Resources and reservations"| MDB["MongoDB"]
+        SYS -->|"Events"| MQ["RabbitMQ"]
+
+        SYS -->|"Metrics"| PROM["Prometheus"]
+        PROM -->|"Dashboards"| GRAF["Grafana"]
+```
+
+This diagram shows the system at the highest level: a user accesses a single product, which depends on databases (PostgreSQL + MongoDB), a message queue (RabbitMQ), and monitoring (Prometheus/Grafana).
+
+#### 2) Microservices / Container View (How requests flow)
+
+```mermaid
+flowchart LR
+        U["User"] -->|"Browser"| FE["Frontend - React build served by Nginx"]
+
+        FE -->|"REST"| US["User Service - FastAPI"]
+        FE -->|"REST"| RS["Resource Service - FastAPI"]
+        FE -->|"REST"| RES["Reservation Service - FastAPI"]
+
+        US -->|"SQL"| PG["PostgreSQL - userdb"]
+        RS -->|"MongoDB"| MDBR["MongoDB - resourcedb"]
+        RES -->|"MongoDB"| MDBS["MongoDB - reservationdb"]
+
+        RS -->|"REST - auth/user context"| US
+        RES -->|"REST - auth/user context"| US
+        RES -->|"REST - resource details/availability"| RS
+
+        RES -->|"AMQP publish"| MQ["RabbitMQ"]
+        NS["Notification Service - FastAPI"] -->|"AMQP consume"| MQ
+
+        PROM["Prometheus"] -->|"scrape"| US
+        PROM -->|"scrape"| RS
+        PROM -->|"scrape"| RES
+        PROM -->|"scrape"| NS
+        GRAF["Grafana"] -->|"query"| PROM
+```
+
+This diagram breaks the system into the frontend plus four backend services. Each service owns its data store (PostgreSQL for users, MongoDB for resources/reservations). Reservation events are published to RabbitMQ and consumed by the notification service.
+
+#### 3) Kubernetes Structure (How it runs on the cluster)
+
+```mermaid
+flowchart TB
+        subgraph NS["Namespace reservation-system"]
+                ING["Ingress"] --> SFE["Service frontend (NodePort)"]
+                ING --> SUS["Service user-service (NodePort)"]
+                ING --> SRS["Service resource-service (NodePort)"]
+                ING --> SRES["Service reservation-service (NodePort)"]
+
+                SFE --> DFE["Deployment frontend"]
+                SUS --> DUS["Deployment user-service"]
+                SRS --> DRS["Deployment resource-service"]
+                SRES --> DRES["Deployment reservation-service"]
+
+                SNS["Service notification-service"] --> DNS["Deployment notification-service"]
+
+                SPG["Service postgres"] --> DPG["Deployment postgres"]
+                SMDB["Service mongodb"] --> DMDB["Deployment mongodb"]
+                SMQ["Service rabbitmq"] --> DMQ["Deployment rabbitmq"]
+
+                DPG --> PVC1["PVC postgres-pvc"]
+                DMDB --> PVC2["PVC mongodb-pvc"]
+                DMQ --> PVC3["PVC rabbitmq-pvc"]
+
+                JOB["Job db-init"] --> DPG
+                JOB --> DMDB
+
+                SPROM["Service prometheus"] --> DPROM["Deployment prometheus"]
+                SGRAF["Service grafana"] --> DGRAF["Deployment grafana"]
+                DGRAF --> DPROM
+        end
+```
+
+This diagram maps the same application onto Kubernetes primitives: Ingress routes traffic to Services, Services target Deployments, stateful components use PVCs, and a one-time db-init Job seeds the databases.
+
+#### 4) CI/CD Pipeline (Local + GitHub Actions)
+
+```mermaid
+flowchart LR
+        Dev["Developer"] -->|"Code change"| Git["Git repo"]
+
+        subgraph Local["Local pipeline"]
+                Make["make ci"] --> BI["Build images (docker build)"]
+                BI --> DK["Deploy to K8s (kubectl apply -k k8s/)"]
+                DK --> WT["Wait ready (deployments + db-init job)"]
+                WT --> ST["Smoke tests (in-cluster curl pod)"]
+        end
+
+        Dev --> Make
+
+        subgraph GA["GitHub Actions (ci-cd.yaml)"]
+                PR["Pull request"] --> T1["Lint + unit tests (flake8 + pytest)"]
+                Push["Push to main"] --> T2["Lint + unit tests"]
+                T2 --> BP["Build + push images (GHCR, tag=commit SHA)"]
+                BP --> DEP["Deploy to Kubernetes (rewrite image tag + apply)"]
+        end
+
+        Git --> PR
+        Git --> Push
+```
+
+This diagram shows two pipelines: a local one (`make ci`) for fast feedback, and an automated GitHub Actions pipeline that validates changes (lint/tests), builds/pushes images, and deploys to Kubernetes when changes reach main.
+
 ## Microservices
 
 | Service | Port | Description | Database |
