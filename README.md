@@ -13,18 +13,20 @@ A microservices-based reservation system for booking library desks, study rooms,
         ▼                     ▼                     ▼
 ┌───────────────┐    ┌────────────────┐    ┌────────────────┐
 │  User Service │    │ Resource       │    │ Reservation    │
-│  (Port 8000)  │    │ Service (8001) │    │ Service (8002) │
+│  (Port 30000) │    │ Service (31001)│    │ Service (31002)│
 └───────────────┘    └────────────────┘    └────────────────┘
         │                     │                     │
         │                     │                     ▼
         │                     │            ┌────────────────┐
         │                     │            │ Notification   │
-        │                     │            │ Service (8003) │
+        │                     │            │ Service (31003)│
         │                     │            └────────────────┘
         │                     │                     │
         ▼                     ▼                     ▼
 ┌───────────────┐    ┌────────────────┐    ┌────────────────┐
 │  PostgreSQL   │    │   MongoDB      │    │   RabbitMQ     │
+│ (Port 30432)  │    │  (Port 30017)  │    │   AMQP:30672   │
+│               │    │                │    │   Mgmt:31672.  │
 └───────────────┘    └────────────────┘    └────────────────┘
 ```
 
@@ -32,10 +34,10 @@ A microservices-based reservation system for booking library desks, study rooms,
 
 | Service | Port | Description | Database |
 |---------|------|-------------|----------|
-| **User Service** | 8000 | Authentication, user management, JWT tokens | PostgreSQL |
-| **Resource Service** | 8001 | Manage rooms, desks, and bookable resources | MongoDB |
-| **Reservation Service** | 8002 | Handle reservations, availability checking | MongoDB |
-| **Notification Service** | 8003 | Send email notifications via message queue | RabbitMQ |
+| **User Service** | 30000 | Authentication, user management, JWT tokens | PostgreSQL |
+| **Resource Service** | 31001 | Manage rooms, desks, and bookable resources | MongoDB |
+| **Reservation Service** | 31002 | Handle reservations, availability checking | MongoDB |
+| **Notification Service** | 31003| Send email notifications via message queue | RabbitMQ |
 
 ## Tech Stack
 
@@ -69,12 +71,12 @@ This system implements a **hybrid security approach** that balances user experie
 - **PUT /api/v1/reservations/{id}** - Cancel/modify reservations
 
 **Benefits of This Approach**:
-- ✅ Reduces friction for new users exploring the system
-- ✅ Protects sensitive operations (creating reservations, modifying data)
-- ✅ Follows industry best practices (similar to Airbnb, booking.com)
-- ✅ All write operations require authentication
-- ✅ Personal data (user reservations) is fully protected
-- ✅ **Consistent JWT secret across Docker Compose and Kubernetes** so tokens issued in one environment remain valid in the other. If you rotate the secret, update both `docker-compose.yml` and the `app-secrets` Kubernetes secret together.
+-  Reduces friction for new users exploring the system
+-  Protects sensitive operations (creating reservations, modifying data)
+-  Follows industry best practices (similar to Airbnb, booking.com)
+-  All write operations require authentication
+-  Personal data (user reservations) is fully protected
+-  **Consistent JWT secret across Docker Compose and Kubernetes** so tokens issued in one environment remain valid in the other. If you rotate the secret, update both `docker-compose.yml` and the `app-secrets` Kubernetes secret together.
 
 ## Project Structure
 
@@ -175,10 +177,10 @@ cd reservation-system
 docker-compose up -d
 
 # Check service health
-curl http://localhost:8000/health  # User Service
-curl http://localhost:8001/health  # Resource Service
-curl http://localhost:8002/health  # Reservation Service
-curl http://localhost:8003/health  # Notification Service
+curl http://localhost:30000/health  # User Service
+curl http://localhost:30001/health  # Resource Service
+curl http://localhost:30002/health  # Reservation Service
+curl http://localhost:30003/health  # Notification Service
 
 # View logs
 docker-compose logs -f
@@ -191,13 +193,13 @@ docker-compose down
 
 | Service | URL |
 |---------|-----|
-| User Service API | http://localhost:8000/docs |
-| Resource Service API | http://localhost:8001/docs |
-| Reservation Service API | http://localhost:8002/docs |
-| Notification Service | http://localhost:8003/health |
-| RabbitMQ Management | http://localhost:15672 (guest/guest) |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 (admin/admin) |
+| User Service API | http://localhost:30000/docs |
+| Resource Service API | http://localhost:30001/docs |
+| Reservation Service API | http://localhost:30002/docs |
+| Notification Service | http://localhost:30003/health |
+| RabbitMQ Management | http://localhost:30672 (guest/guest) |
+| Prometheus | http://localhost:30909 |
+| Grafana | http://localhost:30300 (admin/admin) |
 
 ## 📖 API Documentation
 
