@@ -446,8 +446,8 @@ pytest tests/ --cov=app --cov-report=html
 
 | Member | Responsibilities |
 |--------|-----------------|
-| Member 1 | User Service, Authentication, CI/CD Pipeline |
-| Member 2 | Resource Service, Reservation Service, Kubernetes Deployment |
+| Sude Ateşoğlu | User Service, Notification Service, Authentication, Docker Containerization , CI/CD Pipeline |
+| Barış İnan    | Resource Service, Reservation Service, Front-end , Kubernetes Deployment |
 
 ## License
 
