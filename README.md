@@ -2,7 +2,7 @@
 
 A microservices-based reservation system for booking library desks, study rooms, meeting rooms, and office spaces. Built with Python FastAPI, deployed on Kubernetes with complete CI/CD pipeline and monitoring.
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -28,7 +28,7 @@ A microservices-based reservation system for booking library desks, study rooms,
 └───────────────┘    └────────────────┘    └────────────────┘
 ```
 
-## 📦 Microservices
+## Microservices
 
 | Service | Port | Description | Database |
 |---------|------|-------------|----------|
@@ -37,7 +37,7 @@ A microservices-based reservation system for booking library desks, study rooms,
 | **Reservation Service** | 8002 | Handle reservations, availability checking | MongoDB |
 | **Notification Service** | 8003 | Send email notifications via message queue | RabbitMQ |
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend**: Python 3.11, FastAPI
 - **Databases**: PostgreSQL, MongoDB
@@ -48,7 +48,7 @@ A microservices-based reservation system for booking library desks, study rooms,
 - **Monitoring**: Prometheus, Grafana
 - **Authentication**: JWT (JSON Web Tokens) with Hybrid Security Model
 
-## 🔒 Security Model
+## Security Model
 
 This system implements a **hybrid security approach** that balances user experience with data protection:
 
@@ -76,7 +76,7 @@ This system implements a **hybrid security approach** that balances user experie
 - ✅ Personal data (user reservations) is fully protected
 - ✅ **Consistent JWT secret across Docker Compose and Kubernetes** so tokens issued in one environment remain valid in the other. If you rotate the secret, update both `docker-compose.yml` and the `app-secrets` Kubernetes secret together.
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 reservation-system/
@@ -102,7 +102,7 @@ reservation-system/
 └── README.md
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Local CI/CD (one command)
 
@@ -238,7 +238,7 @@ POST   /api/v1/reservations/{id}/cancel - Cancel reservation
 GET    /api/v1/availability/{resource_id} - Get availability
 ```
 
-## ☸️ Kubernetes Deployment
+## Kubernetes Deployment
 
 ### Deploy to Kubernetes
 
@@ -284,7 +284,7 @@ docker push your-registry/user-service:latest
 # ... repeat for other services
 ```
 
-## 🔄 CI/CD Pipeline
+## CI/CD Pipeline
 
 The GitHub Actions pipeline automatically:
 
@@ -298,7 +298,7 @@ Configure these in GitHub repository settings:
 
 - `KUBE_CONFIG`: Base64 encoded kubeconfig file
 
-## 📊 Monitoring
+## Monitoring
 
 ### Prometheus Metrics
 
@@ -315,7 +315,7 @@ Pre-configured dashboard shows:
 - Response time (p95)
 - Total requests per service
 
-## 🧪 Testing
+## Testing
 
 ```bash
 # Run tests for a service
@@ -328,14 +328,14 @@ pytest tests/ -v
 pytest tests/ --cov=app --cov-report=html
 ```
 
-## 🤝 Team Contributions
+## Team Contributions
 
 | Member | Responsibilities |
 |--------|-----------------|
 | Member 1 | User Service, Authentication, CI/CD Pipeline |
 | Member 2 | Resource Service, Reservation Service, Kubernetes Deployment |
 
-## 📝 License
+## License
 
 This project is for educational purposes - CMPE363 Semester Project.
 
