@@ -194,9 +194,9 @@ docker-compose down
 | Service | URL |
 |---------|-----|
 | User Service API | http://localhost:30000/docs |
-| Resource Service API | http://localhost:30001/docs |
-| Reservation Service API | http://localhost:30002/docs |
-| Notification Service | http://localhost:30003/health |
+| Resource Service API | http://localhost:31001/docs |
+| Reservation Service API | http://localhost:31002/docs |
+| Notification Service | http://localhost:31003/health |
 | RabbitMQ Management | http://localhost:30672 (guest/guest) |
 | Prometheus | http://localhost:30909 |
 | Grafana | http://localhost:30300 (admin/admin) |
