@@ -106,3 +106,4 @@ def root():
         "version": settings.APP_VERSION,
         "docs": "/docs"
     }
+ #Demo change by Barış - showing CI/CD flow
